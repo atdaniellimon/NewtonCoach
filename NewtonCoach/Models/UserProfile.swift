@@ -1,5 +1,45 @@
 import Foundation
 
+public enum Gender: String, Codable, CaseIterable, Identifiable {
+    case male = "Masculino"
+    case female = "Femenino"
+    case other = "Otro"
+    
+    public var id: String { rawValue }
+}
+
+public enum ActivityLevel: String, Codable, CaseIterable, Identifiable {
+    case sedentary = "Sedentario (Poco o nada de ejercicio)"
+    case light = "Ligero (1-3 días por semana)"
+    case moderate = "Moderado (3-5 días por semana)"
+    case active = "Activo (6-7 días por semana)"
+    case veryActive = "Muy Activo (Doble sesión / Trabajo físico pesado)"
+    
+    public var id: String { rawValue }
+    
+    public var multiplier: Double {
+        switch self {
+        case .sedentary: return 1.2
+        case .light: return 1.375
+        case .moderate: return 1.55
+        case .active: return 1.725
+        case .veryActive: return 1.9
+        }
+    }
+}
+
+public struct WeightEntry: Codable, Identifiable {
+    public var id: UUID
+    public var date: Date
+    public var weightKg: Double
+    
+    public init(id: UUID = UUID(), date: Date = Date(), weightKg: Double) {
+        self.id = id
+        self.date = date
+        self.weightKg = weightKg
+    }
+}
+
 public struct UserProfile: Codable {
     public var name: String
     public var birthDate: Date

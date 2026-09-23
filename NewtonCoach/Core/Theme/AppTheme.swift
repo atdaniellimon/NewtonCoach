@@ -13,6 +13,10 @@ public enum AppTheme {
     public static let standCyan = Color(hex: "00F0FF")      // Anillo de pie / Hidratación / Carbos
     public static let awardGold = Color(hex: "FFD60A")      // Trofeos / Cumpleaños / Grasas
     
+    // Alias para retrocompatibilidad
+    public static let primaryNeon = exerciseGreen
+    public static let secondaryAccent = Color(hex: "7000FF")
+    
     // Tipografía
     public static let textPrimary = Color.white
     public static let textSecondary = Color(hex: "8E8E93")

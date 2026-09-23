@@ -46,8 +46,8 @@ public struct ActiveWorkoutView: View {
                 }
                 
                 // Lista de Ejercicios
-                ForEach($routine.exercises) { $exercise in
-                    exerciseBlock(exercise: $exercise)
+                ForEach(0..<routine.exercises.count, id: \.self) { exerciseIndex in
+                    exerciseBlock(exerciseIndex: exerciseIndex)
                 }
             }
             .padding()
@@ -66,14 +66,16 @@ public struct ActiveWorkoutView: View {
         }
     }
     
-    private func exerciseBlock(exercise: Binding<ExerciseLog>) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+    private func exerciseBlock(exerciseIndex: Int) -> some View {
+        let exercise = routine.exercises[exerciseIndex]
+        
+        return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(exercise.wrappedValue.name)
+                Text(exercise.name)
                     .font(.headline.weight(.bold))
                     .foregroundColor(AppTheme.textPrimary)
                 Spacer()
-                Text(exercise.wrappedValue.category.rawValue)
+                Text(exercise.category.rawValue)
                     .font(.caption2.weight(.bold))
                     .foregroundColor(AppTheme.exerciseGreen)
                     .padding(.horizontal, 8)
@@ -94,14 +96,16 @@ public struct ActiveWorkoutView: View {
                 .font(.caption2.weight(.bold))
                 .foregroundColor(AppTheme.textSecondary)
                 
-                ForEach($exercise.sets) { $set in
+                ForEach(0..<routine.exercises[exerciseIndex].sets.count, id: \.self) { setIndex in
+                    let set = routine.exercises[exerciseIndex].sets[setIndex]
+                    
                     HStack {
                         Text("\(set.setNumber)")
                             .font(.caption.weight(.bold))
                             .foregroundColor(AppTheme.textSecondary)
                             .frame(width: 40)
                         
-                        TextField("kg", value: $set.weightKg, format: .number)
+                        TextField("kg", value: $routine.exercises[exerciseIndex].sets[setIndex].weightKg, format: .number)
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.center)
                             .font(.subheadline.weight(.semibold))
@@ -110,7 +114,7 @@ public struct ActiveWorkoutView: View {
                             .cornerRadius(8)
                             .frame(maxWidth: .infinity)
                         
-                        TextField("reps", value: $set.reps, format: .number)
+                        TextField("reps", value: $routine.exercises[exerciseIndex].sets[setIndex].reps, format: .number)
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.center)
                             .font(.subheadline.weight(.semibold))
@@ -119,7 +123,7 @@ public struct ActiveWorkoutView: View {
                             .cornerRadius(8)
                             .frame(maxWidth: .infinity)
                         
-                        TextField("RIR", value: $set.rir, format: .number)
+                        TextField("RIR", value: $routine.exercises[exerciseIndex].sets[setIndex].rir, format: .number)
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.center)
                             .font(.subheadline.weight(.semibold))
@@ -129,11 +133,10 @@ public struct ActiveWorkoutView: View {
                             .frame(width: 50)
                         
                         Button(action: {
-                            set.isCompleted.toggle()
-                            if set.isCompleted {
+                            routine.exercises[exerciseIndex].sets[setIndex].isCompleted.toggle()
+                            if routine.exercises[exerciseIndex].sets[setIndex].isCompleted {
                                 let generator = UIImpactFeedbackGenerator(style: .medium)
                                 generator.impactOccurred()
-                                // Iniciar timer de 90s de descanso
                                 restSecondsRemaining = 90
                                 timerActive = true
                             }
