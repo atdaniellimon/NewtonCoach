@@ -1,0 +1,74 @@
+name: Build & Release iOS App
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build NewtonCoach (Xcode Latest)
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Select Latest Xcode Version
+        run: |
+          echo "Available Xcode versions:"
+          ls -d /Applications/Xcode* || true
+          LATEST_XCODE=$(find /Applications -maxdepth 1 -name "Xcode*.app" | sort -V | tail -n 1)
+          echo "Selected: $LATEST_XCODE"
+          sudo xcode-select -s "$LATEST_XCODE/Contents/Developer"
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: |
+          brew install xcodegen
+
+      - name: Generate Xcode Project
+        run: |
+          xcodegen generate
+
+      - name: Build for iOS Device (Release)
+        run: |
+          xcodebuild -project NewtonCoach.xcodeproj \
+            -scheme NewtonCoach \
+            -destination "generic/platform=iOS" \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package Payload & Create Artifacts
+        run: |
+          mkdir -p build_output/Payload
+          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "NewtonCoach.app" -type d | head -n 1)
+          
+          if [ -n "$APP_PATH" ] && [ -d "$APP_PATH" ]; then
+            echo "Found app at: $APP_PATH"
+            cp -R "$APP_PATH" build_output/Payload/
+            cd build_output
+            zip -r NewtonCoach.ipa Payload
+            zip -r NewtonCoach-App.zip Payload/NewtonCoach.app
+            cd ..
+          else
+            echo "Warning: Could not locate NewtonCoach.app"
+          fi
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: NewtonCoach-iOS-Release
+          path: |
+            build_output/*.zip
+            build_output/*.ipa
+          retention-days: 14
