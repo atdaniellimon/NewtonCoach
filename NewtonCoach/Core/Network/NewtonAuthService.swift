@@ -16,6 +16,7 @@ public struct NewtonLoginResponse: Codable {
     public let email: String?
     public let email_verified: Bool?
     public let api_key: String?
+    public let tier: NewtonTierInfo?
     public let credits_left: Double?
     public let rpm_limit: Int?
     public let message: String?
