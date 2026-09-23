@@ -5,6 +5,13 @@ public struct CoachChatMessage: Identifiable, Codable {
     public var role: String // "user" o "assistant"
     public var content: String
     public var timestamp = Date()
+    
+    public init(id: UUID = UUID(), role: String, content: String, timestamp: Date = Date()) {
+        self.id = id
+        self.role = role
+        self.content = content
+        self.timestamp = timestamp
+    }
 }
 
 public struct CoachChatView: View {
@@ -15,7 +22,9 @@ public struct CoachChatView: View {
     @State private var inputPrompt: String = ""
     @State private var isStreaming: Bool = false
     
-    var body: some View {
+    public init() {}
+    
+    public var body: some View {
         VStack(spacing: 0) {
             ScrollViewReader { proxy in
                 ScrollView {

@@ -4,7 +4,9 @@ public struct MealPlanView: View {
     @EnvironmentObject var appState: AppState
     @State private var showingCameraScan = false
     
-    var body: some View {
+    public init() {}
+    
+    public var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 // Header del Menú

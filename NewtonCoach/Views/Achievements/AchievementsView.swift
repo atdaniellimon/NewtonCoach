@@ -4,7 +4,9 @@ public struct AchievementsView: View {
     @ObservedObject var achievementManager = AchievementManager.shared
     @EnvironmentObject var appState: AppState
     
-    var body: some View {
+    public init() {}
+    
+    public var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {

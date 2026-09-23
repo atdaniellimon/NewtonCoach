@@ -5,7 +5,9 @@ public struct DashboardView: View {
     @State private var showingWeightModal = false
     @State private var newWeightText = ""
     
-    var body: some View {
+    public init() {}
+    
+    public var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {

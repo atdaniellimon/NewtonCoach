@@ -3,13 +3,108 @@ import SwiftUI
 public struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @ObservedObject var notificationManager = NotificationManager.shared
-    @State private var apiKey: String = ""
+    
+    // Estados para Login con Newton Labs (/auth/login)
+    @State private var usernameInput: String = ""
+    @State private var passwordInput: String = ""
+    @State private var isLoggingIn: Bool = false
+    @State private var loginError: String?
+    @State private var loginSuccessMessage: String?
+    
+    // Estado de cuenta Newton
+    @State private var userCredits: Double?
+    @State private var userTierName: String?
+    @State private var userEmail: String?
+    
+    // Clave manual de fallback
+    @State private var manualApiKey: String = ""
     @State private var hasSavedKey = false
     
-    var body: some View {
+    public init() {}
+    
+    public var body: some View {
         NavigationStack {
             Form {
-                // Sección de Datos Personales
+                // Sección de Autenticación Oficial Newton Labs (/auth/login y /auth/me)
+                Section(header: Text("Cuenta Newton Labs (Autenticación Oficial)"), footer: Text("Inicia sesión con tu cuenta de Newton Labs para sincronizar tu cuota y autorizar peticiones.")) {
+                    if let key = KeychainManager.shared.getApiKey(), !key.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Image(systemName: "checkmark.seal.fill")
+                                    .foregroundColor(AppTheme.success)
+                                Text("Sesión Activa")
+                                    .font(.headline)
+                                    .foregroundColor(AppTheme.textPrimary)
+                            }
+                            if let email = userEmail {
+                                Text(email)
+                                    .font(.subheadline)
+                                    .foregroundColor(AppTheme.textSecondary)
+                            }
+                            if let tier = userTierName {
+                                Text("Plan: \(tier)")
+                                    .font(.caption.bold())
+                                    .foregroundColor(AppTheme.primaryNeon)
+                            }
+                            if let credits = userCredits {
+                                Text("Créditos restantes: \(Int(credits)) tokens")
+                                    .font(.caption)
+                                    .foregroundColor(AppTheme.textSecondary)
+                            }
+                            
+                            Button(role: .destructive, action: logoutNewton) {
+                                Text("Cerrar Sesión")
+                            }
+                            .padding(.top, 4)
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 10) {
+                            TextField("Usuario o Email", text: $usernameInput)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                            
+                            SecureField("Contraseña", text: $passwordInput)
+                            
+                            if isLoggingIn {
+                                ProgressView("Conectando con api.newton.daniellimon.uk...")
+                            } else {
+                                Button(action: loginWithNewton) {
+                                    Text("Iniciar Sesión (POST /auth/login)")
+                                        .font(.headline)
+                                        .foregroundColor(AppTheme.primaryNeon)
+                                }
+                                .disabled(usernameInput.isEmpty || passwordInput.isEmpty)
+                            }
+                            
+                            if let error = loginError {
+                                Text(error)
+                                    .font(.caption)
+                                    .foregroundColor(AppTheme.danger)
+                            }
+                        }
+                    }
+                }
+                
+                // Fallback o Edición manual de API Key
+                Section(header: Text("API Key Manual"), footer: Text("Alternativamente puedes ingresar directamente un token ntwn-...")) {
+                    SecureField("ntwn-...", text: $manualApiKey)
+                    Button(action: {
+                        if KeychainManager.shared.saveApiKey(manualApiKey) {
+                            hasSavedKey = true
+                            refreshNewtonProfile()
+                        }
+                    }) {
+                        Text("Guardar Token Manual")
+                            .foregroundColor(AppTheme.primaryNeon)
+                    }
+                    if hasSavedKey {
+                        Text("Token guardado en Keychain.")
+                            .font(.caption)
+                            .foregroundColor(AppTheme.success)
+                    }
+                }
+                
+                // Sección de Datos Biométricos
                 Section("Datos Biométricos") {
                     TextField("Nombre", text: $appState.userProfile.name)
                         .onChange(of: appState.userProfile.name) { _ in appState.saveProfile() }
@@ -92,31 +187,53 @@ public struct SettingsView: View {
                         }
                     }
                 }
-                
-                // Sección de Credenciales Newton Labs AI
-                Section(header: Text("Newton Labs API Gateway"), footer: Text("Tu API Key se almacena de forma segura en el Keychain del iPhone y nunca abandona tu dispositivo.")) {
-                    SecureField("ntwn-...", text: $apiKey)
-                    Button(action: {
-                        if KeychainManager.shared.saveApiKey(apiKey) {
-                            hasSavedKey = true
-                        }
-                    }) {
-                        Text("Guardar API Key")
-                            .foregroundColor(AppTheme.primaryNeon)
-                    }
-                    if hasSavedKey {
-                        Text("Clave guardada con éxito en Keychain.")
-                            .font(.caption)
-                            .foregroundColor(AppTheme.success)
-                    }
-                }
             }
             .navigationTitle("Ajustes")
             .onAppear {
                 if let key = KeychainManager.shared.getApiKey() {
-                    self.apiKey = key
+                    self.manualApiKey = key
+                    refreshNewtonProfile()
                 }
             }
         }
+    }
+    
+    private func loginWithNewton() {
+        isLoggingIn = true
+        loginError = nil
+        Task { @MainActor in
+            do {
+                let res = try await NewtonAPIClient.shared.login(username: usernameInput, password: passwordInput)
+                if let key = res.api_key {
+                    self.manualApiKey = key
+                    self.userEmail = res.email
+                    self.userTierName = res.tier?.name
+                    self.userCredits = res.credits_left
+                }
+                self.isLoggingIn = false
+                refreshNewtonProfile()
+            } catch {
+                self.loginError = error.localizedDescription
+                self.isLoggingIn = false
+            }
+        }
+    }
+    
+    private func refreshNewtonProfile() {
+        Task { @MainActor in
+            if let profile = try? await NewtonAPIClient.shared.getProfileMe() {
+                self.userEmail = profile.email
+                self.userTierName = profile.tier?.name
+                self.userCredits = profile.credits?.remaining
+            }
+        }
+    }
+    
+    private func logoutNewton() {
+        KeychainManager.shared.deleteApiKey()
+        manualApiKey = ""
+        userEmail = nil
+        userTierName = nil
+        userCredits = nil
     }
 }
