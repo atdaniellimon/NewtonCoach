@@ -11,18 +11,22 @@ public final class AppState: ObservableObject {
     private let menuKey = "newton_today_menu_v1"
     
     public init() {
+        let loadedProfile: UserProfile
         if let data = UserDefaults.standard.data(forKey: profileKey),
            let profile = try? JSONDecoder().decode(UserProfile.self, from: data) {
-            self.userProfile = profile
+            loadedProfile = profile
         } else {
-            self.userProfile = UserProfile()
+            loadedProfile = UserProfile()
         }
         
-        self.currentTargets = NutritionEngine.shared.calculateTargets(for: self.userProfile)
+        self.userProfile = loadedProfile
+        self.currentTargets = NutritionEngine.shared.calculateTargets(for: loadedProfile)
         
         if let menuData = UserDefaults.standard.data(forKey: menuKey),
            let menu = try? JSONDecoder().decode(MealPlan.self, from: menuData) {
             self.todayMenu = menu
+        } else {
+            self.todayMenu = nil
         }
     }
     
