@@ -89,9 +89,15 @@ public struct DashboardView: View {
             
             HStack(spacing: 24) {
                 // Anillos Concéntricos Animados
-                let caloriesRatio = min(1.0, 1850.0 / max(1.0, appState.currentTargets.targetCalories))
-                let weightRatio = min(1.0, max(0.1, 1.0 - (abs(appState.userProfile.weightDelta) / 10.0)))
-                let proteinRatio = min(1.0, 110.0 / max(1.0, appState.currentTargets.proteinGrams))
+                let consumedCals = appState.userProfile.todayConsumedCalories
+                let targetCals = max(1.0, appState.currentTargets.targetCalories)
+                let caloriesRatio = min(1.0, consumedCals / targetCals)
+                
+                let weightRatio = min(1.0, max(0.05, 1.0 - (abs(appState.userProfile.weightDelta) / 10.0)))
+                
+                let consumedProt = appState.userProfile.todayConsumedProtein
+                let targetProt = max(1.0, appState.currentTargets.proteinGrams)
+                let proteinRatio = min(1.0, consumedProt / targetProt)
                 
                 ActivityRingsView(
                     caloriesProgress: caloriesRatio,
@@ -105,9 +111,14 @@ public struct DashboardView: View {
                         Text("Move")
                             .font(.caption.weight(.semibold))
                             .foregroundColor(AppTheme.textSecondary)
-                        Text("\(Int(appState.currentTargets.targetCalories)) KCAL")
-                            .font(.system(size: 18, weight: .bold, design: .rounded))
-                            .foregroundColor(AppTheme.moveRed)
+                        HStack(alignment: .firstTextBaseline, spacing: 3) {
+                            Text("\(Int(consumedCals))")
+                                .font(.system(size: 18, weight: .bold, design: .rounded))
+                                .foregroundColor(AppTheme.moveRed)
+                            Text("/ \(Int(targetCals)) KCAL")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(AppTheme.textSecondary)
+                        }
                     }
                     
                     VStack(alignment: .leading, spacing: 2) {
@@ -123,14 +134,20 @@ public struct DashboardView: View {
                         Text("Protein Target")
                             .font(.caption.weight(.semibold))
                             .foregroundColor(AppTheme.textSecondary)
-                        Text("\(Int(appState.currentTargets.proteinGrams)) G")
-                            .font(.system(size: 18, weight: .bold, design: .rounded))
-                            .foregroundColor(AppTheme.standCyan)
+                        HStack(alignment: .firstTextBaseline, spacing: 3) {
+                            Text("\(Int(consumedProt))")
+                                .font(.system(size: 18, weight: .bold, design: .rounded))
+                                .foregroundColor(AppTheme.standCyan)
+                            Text("/ \(Int(targetProt)) G")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(AppTheme.textSecondary)
+                        }
                     }
                 }
                 Spacer()
             }
         }
+
         .padding(18)
         .background(AppTheme.surface)
         .cornerRadius(20)
@@ -231,17 +248,25 @@ public struct DashboardView: View {
                             .foregroundColor(AppTheme.textSecondary)
                     }
                     
+                    let consumed = appState.userProfile.todayConsumedCalories
+                    let target = appState.currentTargets.targetCalories
+                    
                     Text("Today's Diet")
                         .font(.caption2)
                         .foregroundColor(AppTheme.textSecondary)
                     
-                    Text("\(Int(appState.currentTargets.targetCalories)) CAL")
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundColor(AppTheme.exerciseGreen)
+                    HStack(alignment: .firstTextBaseline, spacing: 3) {
+                        Text("\(Int(consumed))")
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .foregroundColor(AppTheme.exerciseGreen)
+                        Text("/ \(Int(target))")
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
                     
                     Spacer()
                     
-                    Text("\(Int(appState.currentTargets.proteinGrams))g Proteína • \(Int(appState.currentTargets.carbGrams))g Carbos")
+                    Text("\(Int(appState.userProfile.todayConsumedProtein))g / \(Int(appState.currentTargets.proteinGrams))g Proteína")
                         .font(.caption2)
                         .foregroundColor(AppTheme.textSecondary)
                 }
@@ -252,6 +277,7 @@ public struct DashboardView: View {
                 .overlay(RoundedRectangle(cornerRadius: 20).stroke(AppTheme.surfaceBorder, lineWidth: 0.5))
             }
             .buttonStyle(.plain)
+
             
             // Tarjeta 4: Awards / Premios con Medalla 3D
             NavigationLink(destination: AchievementsView()) {

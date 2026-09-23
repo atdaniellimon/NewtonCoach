@@ -40,6 +40,37 @@ public struct WeightEntry: Codable, Identifiable {
     }
 }
 
+public struct LoggedFoodEntry: Codable, Identifiable {
+    public var id: UUID
+    public var date: Date
+    public var name: String
+    public var description: String
+    public var calories: Double
+    public var protein: Double
+    public var carbs: Double
+    public var fat: Double
+    
+    public init(
+        id: UUID = UUID(),
+        date: Date = Date(),
+        name: String,
+        description: String = "",
+        calories: Double,
+        protein: Double,
+        carbs: Double,
+        fat: Double
+    ) {
+        self.id = id
+        self.date = date
+        self.name = name
+        self.description = description
+        self.calories = calories
+        self.protein = protein
+        self.carbs = carbs
+        self.fat = fat
+    }
+}
+
 public struct UserProfile: Codable {
     public var name: String
     public var birthDate: Date
@@ -52,6 +83,7 @@ public struct UserProfile: Codable {
     public var unitSystem: UnitSystem
     public var syncWithHealthKit: Bool
     public var weightHistory: [WeightEntry]
+    public var loggedFoods: [LoggedFoodEntry]
     
     public init(
         name: String = "Daniel",
@@ -64,7 +96,8 @@ public struct UserProfile: Codable {
         activityLevel: ActivityLevel = .moderate,
         unitSystem: UnitSystem = .metric,
         syncWithHealthKit: Bool = false,
-        weightHistory: [WeightEntry] = []
+        weightHistory: [WeightEntry] = [],
+        loggedFoods: [LoggedFoodEntry] = []
     ) {
         self.name = name
         self.birthDate = birthDate
@@ -77,6 +110,7 @@ public struct UserProfile: Codable {
         self.unitSystem = unitSystem
         self.syncWithHealthKit = syncWithHealthKit
         self.weightHistory = weightHistory.isEmpty ? [WeightEntry(date: Date(), weightKg: currentWeightKg)] : weightHistory
+        self.loggedFoods = loggedFoods
     }
     
     public var age: Int {
@@ -101,4 +135,27 @@ public struct UserProfile: Codable {
         let birthComponents = calendar.dateComponents([.month, .day], from: birthDate)
         return todayComponents.month == birthComponents.month && todayComponents.day == birthComponents.day
     }
+    
+    /// Alimentos consumidos hoy
+    public var todayLoggedFoods: [LoggedFoodEntry] {
+        let calendar = Calendar.current
+        return loggedFoods.filter { calendar.isDateInToday($0.date) }
+    }
+    
+    public var todayConsumedCalories: Double {
+        return todayLoggedFoods.reduce(0) { $0 + $1.calories }
+    }
+    
+    public var todayConsumedProtein: Double {
+        return todayLoggedFoods.reduce(0) { $0 + $1.protein }
+    }
+    
+    public var todayConsumedCarbs: Double {
+        return todayLoggedFoods.reduce(0) { $0 + $1.carbs }
+    }
+    
+    public var todayConsumedFat: Double {
+        return todayLoggedFoods.reduce(0) { $0 + $1.fat }
+    }
 }
+

@@ -105,10 +105,10 @@ public struct MealPlanView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("MacroLens Vision")
+                    Text("MacroLens AI (Foto o Texto)")
                         .font(.subheadline.weight(.bold))
                         .foregroundColor(AppTheme.textPrimary)
-                    Text("Toma foto a cualquier plato para calcular sus macros")
+                    Text("Escanea tu plato o describe lo que comiste para calcular macros")
                         .font(.caption2)
                         .foregroundColor(AppTheme.textSecondary)
                 }
@@ -179,18 +179,20 @@ public struct MealPlanView: View {
                 Button(action: {
                     let impact = UIImpactFeedbackGenerator(style: .medium)
                     impact.impactOccurred()
+                    appState.toggleMealPlanCompleted(mealId: meal.id)
                 }) {
-                    Image(systemName: "checkmark.circle.fill")
+                    Image(systemName: meal.isCompleted ? "checkmark.circle.fill" : "circle")
                         .font(.title2)
-                        .foregroundColor(AppTheme.exerciseGreen)
+                        .foregroundColor(meal.isCompleted ? AppTheme.exerciseGreen : AppTheme.textSecondary)
                 }
             }
         }
         .padding(18)
         .background(AppTheme.surface)
         .cornerRadius(20)
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(AppTheme.surfaceBorder, lineWidth: 0.5))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(meal.isCompleted ? AppTheme.exerciseGreen.opacity(0.5) : AppTheme.surfaceBorder, lineWidth: meal.isCompleted ? 1 : 0.5))
     }
+
     
     private var emptyStateNotice: some View {
         VStack(spacing: 14) {

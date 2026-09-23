@@ -194,4 +194,68 @@ public final class NewtonAIService {
             fat: scanned.fat
         )
     }
+    
+    /// Analiza una descripción escrita en lenguaje natural de lo que el usuario comió
+    public func analyzeMealDescription(text: String, currentProfile: UserProfile) async throws -> MealItem {
+        let systemPrompt = """
+        Eres Newton Nutritionist y calculador de macronutrientes.
+        El usuario te describe en lenguaje natural lo que acaba de comer.
+        Tu tarea es estimar los ingredientes, gramos aproximados, calorías totales y macronutrientes (proteína, carbohidratos, grasas).
+        
+        Devuelve ÚNICAMENTE un JSON válido con este formato:
+        {
+          "name": "Nombre conciso del plato o alimentos consumidos",
+          "description": "Desglose estimado con gramos o porciones (ej: 2 huevos revueltos, 2 rebanadas pan integral)",
+          "calories": 420,
+          "protein": 24,
+          "carbs": 38,
+          "fat": 16
+        }
+        """
+        
+        let request = NewtonChatRequest(
+            prompt: "He comido esto: \"\(text)\". Calcula y desglosa sus calorías y macronutrientes.",
+            model: "Singularity",
+            stream: false,
+            system: systemPrompt
+        )
+        
+        let response = try await NewtonAPIClient.shared.sendChatSync(request: request)
+        
+        var rawJson = response.reply
+        // Limpiar bloques de thinking si vinieran en la respuesta
+        if let thinkingEnd = rawJson.range(of: "</thinking>") {
+            rawJson = String(rawJson[thinkingEnd.upperBound...])
+        }
+        
+        if let start = rawJson.range(of: "{"), let end = rawJson.range(of: "}", options: .backwards) {
+            rawJson = String(rawJson[start.lowerBound...end.upperBound])
+        }
+        
+        guard let jsonData = rawJson.data(using: .utf8) else {
+            throw NSError(domain: "NewtonCoach", code: 422, userInfo: [NSLocalizedDescriptionKey: "Error procesando el análisis de tu comida."])
+        }
+        
+        struct ScannedDish: Codable {
+            let name: String
+            let description: String
+            let calories: Double
+            let protein: Double
+            let carbs: Double
+            let fat: Double
+        }
+        
+        let scanned = try JSONDecoder().decode(ScannedDish.self, from: jsonData)
+        
+        return MealItem(
+            category: "Comida Registrada",
+            name: scanned.name,
+            description: scanned.description,
+            calories: scanned.calories,
+            protein: scanned.protein,
+            carbs: scanned.carbs,
+            fat: scanned.fat
+        )
+    }
 }
+

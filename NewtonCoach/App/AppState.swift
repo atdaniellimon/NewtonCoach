@@ -45,6 +45,55 @@ public final class AppState: ObservableObject {
         saveProfile()
     }
     
+    public func logFood(name: String, description: String = "", calories: Double, protein: Double, carbs: Double, fat: Double) {
+        let entry = LoggedFoodEntry(
+            name: name,
+            description: description,
+            calories: calories,
+            protein: protein,
+            carbs: carbs,
+            fat: fat
+        )
+        userProfile.loggedFoods.append(entry)
+        saveProfile()
+    }
+    
+    public func removeLoggedFood(id: UUID) {
+        userProfile.loggedFoods.removeAll { $0.id == id }
+        saveProfile()
+    }
+    
+    public func toggleMealPlanCompleted(mealId: UUID) {
+        guard var menu = todayMenu,
+              let index = menu.meals.firstIndex(where: { $0.id == mealId }) else { return }
+        
+        menu.meals[index].isCompleted.toggle()
+        let meal = menu.meals[index]
+        self.todayMenu = menu
+        
+        if meal.isCompleted {
+            // Registrar como consumido
+            logFood(
+                name: meal.name,
+                description: meal.description,
+                calories: meal.calories,
+                protein: meal.protein,
+                carbs: meal.carbs,
+                fat: meal.fat
+            )
+        } else {
+            // Desmarcar de consumidos si existe con el mismo nombre y fecha de hoy
+            if let lastIndex = userProfile.loggedFoods.lastIndex(where: { $0.name == meal.name && Calendar.current.isDateInToday($0.date) }) {
+                userProfile.loggedFoods.remove(at: lastIndex)
+                saveProfile()
+            }
+        }
+        
+        if let data = try? JSONEncoder().encode(menu) {
+            UserDefaults.standard.set(data, forKey: menuKey)
+        }
+    }
+    
     public func fetchOrRegenerateMenu() {
         isLoadingMenu = true
         errorMessage = nil

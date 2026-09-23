@@ -70,11 +70,31 @@ public struct CoachChatView: View {
         }
     }
     
+    private func cleanCoachMessage(_ raw: String) -> String {
+        var text = raw
+        
+        // Si contiene </thinking>, remover todo lo anterior y el tag de cierre
+        if let closeRange = text.range(of: "</thinking>") {
+            text = String(text[closeRange.upperBound...])
+        } else if text.contains("<thinking>") {
+            // Aún está dentro de un tag no cerrado (durante streaming)
+            return "..."
+        }
+        
+        // Quitar también tags sueltos de thinking si existieran
+        text = text.replacingOccurrences(of: "<thinking>", with: "")
+        text = text.replacingOccurrences(of: "</thinking>", with: "")
+        
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
     private func chatBubble(msg: CoachChatMessage) -> some View {
-        HStack {
+        let displayContent = msg.role == "assistant" ? cleanCoachMessage(msg.content) : msg.content
+        
+        return HStack {
             if msg.role == "user" { Spacer() }
             
-            Text(msg.content)
+            Text(LocalizedStringKey(displayContent.isEmpty ? "..." : displayContent))
                 .font(.subheadline)
                 .foregroundColor(AppTheme.textPrimary)
                 .padding(.horizontal, 16)
@@ -89,6 +109,7 @@ public struct CoachChatView: View {
             if msg.role == "assistant" { Spacer() }
         }
     }
+
     
     private var quickChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
