@@ -63,7 +63,7 @@ public struct UserProfile: Codable {
         targetDate: Date = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date(),
         activityLevel: ActivityLevel = .moderate,
         unitSystem: UnitSystem = .metric,
-        syncWithHealthKit: Bool = true,
+        syncWithHealthKit: Bool = false,
         weightHistory: [WeightEntry] = []
     ) {
         self.name = name

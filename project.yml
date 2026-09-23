@@ -21,5 +21,10 @@ targets:
         SWIFT_VERSION: "5.9"
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: NewtonCoach/Info.plist
+        INFOPLIST_KEY_NSHealthShareUsageDescription: "NewtonCoach necesita leer tu peso, altura y cumpleaños de Apple Health para calcular tus metas nutricionales y sincronizar tu progreso automáticamente."
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: "NewtonCoach sincroniza tus nuevos pesajes registrados en la app directamente en Apple Health."
+        INFOPLIST_KEY_NSCameraUsageDescription: "NewtonCoach necesita acceso a la cámara para que MacroLens pueda analizar los macronutrientes y calorías de tus comidas con IA."
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "NewtonCoach necesita acceso a tu galería para analizar fotos de tus platos y entrenamientos."
         TARGETED_DEVICE_FAMILY: "1,2"
         CODE_SIGN_STYLE: Automatic
+

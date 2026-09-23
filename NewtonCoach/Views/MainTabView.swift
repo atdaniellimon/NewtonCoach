@@ -36,9 +36,6 @@ public struct MainTabView: View {
         .accentColor(AppTheme.exerciseGreen)
         .onAppear {
             NotificationManager.shared.checkAuthorization()
-            if appState.userProfile.syncWithHealthKit {
-                HealthKitManager.shared.requestAuthorization { _, _ in }
-            }
         }
     }
 }
