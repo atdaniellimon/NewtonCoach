@@ -4,52 +4,155 @@ public struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @ObservedObject var notificationManager = NotificationManager.shared
     
-    // Estados para Login con Newton Labs (/auth/login)
+    // Auth Newton Labs
     @State private var usernameInput: String = ""
     @State private var passwordInput: String = ""
     @State private var isLoggingIn: Bool = false
     @State private var loginError: String?
-    @State private var loginSuccessMessage: String?
     
-    // Estado de cuenta Newton
+    // Datos Newton
     @State private var userCredits: Double?
     @State private var userTierName: String?
     @State private var userEmail: String?
     
-    // Clave manual de fallback
-    @State private var manualApiKey: String = ""
-    @State private var hasSavedKey = false
+    @State private var showingWeightModal = false
     
     public init() {}
     
     public var body: some View {
         NavigationStack {
             Form {
-                // Sección de Autenticación Oficial Newton Labs (/auth/login y /auth/me)
-                Section(header: Text("Cuenta Newton Labs (Autenticación Oficial)"), footer: Text("Inicia sesión con tu cuenta de Newton Labs para sincronizar tu cuota y autorizar peticiones.")) {
+                // Sección 1: Apple Health Sync
+                Section(header: Text("Apple Health (HealthKit)")) {
+                    HStack {
+                        Image(systemName: "heart.fill")
+                            .foregroundColor(AppTheme.moveRed)
+                        VStack(alignment: .leading) {
+                            Text("Sincronizar con Apple Health")
+                                .font(.subheadline.weight(.semibold))
+                            Text("Lectura y escritura de pesajes y altura")
+                                .font(.caption2)
+                                .foregroundColor(AppTheme.textSecondary)
+                        }
+                        Spacer()
+                        Toggle("", isOn: $appState.userProfile.syncWithHealthKit)
+                            .tint(AppTheme.exerciseGreen)
+                            .onChange(of: appState.userProfile.syncWithHealthKit) { enabled in
+                                if enabled {
+                                    HealthKitManager.shared.requestAuthorization { _, _ in }
+                                }
+                                appState.saveProfile()
+                            }
+                    }
+                    
+                    Button(action: importHealthData) {
+                        HStack {
+                            Text("Importar datos más recientes de Salud")
+                                .font(.subheadline)
+                                .foregroundColor(AppTheme.exerciseGreen)
+                            Spacer()
+                            Image(systemName: "arrow.down.heart.fill")
+                                .foregroundColor(AppTheme.exerciseGreen)
+                        }
+                    }
+                }
+                
+                // Sección 2: Sistema de Unidades Dual
+                Section(header: Text("Unidades de Medida")) {
+                    Picker("Sistema", selection: $appState.userProfile.unitSystem) {
+                        ForEach(UnitSystem.allCases) { system in
+                            Text(system.rawValue).tag(system)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .onChange(of: appState.userProfile.unitSystem) { _ in
+                        appState.saveProfile()
+                    }
+                }
+                
+                // Sección 3: Datos Biométricos & Peso
+                Section(header: Text("Perfil Biométrico & Metas")) {
+                    HStack {
+                        Text("Peso Actual")
+                        Spacer()
+                        Button(action: { showingWeightModal = true }) {
+                            Text(UnitFormatter.shared.formatWeight(appState.userProfile.currentWeightKg, system: appState.userProfile.unitSystem))
+                                .font(.subheadline.weight(.bold))
+                                .foregroundColor(AppTheme.exerciseGreen)
+                        }
+                    }
+                    
+                    HStack {
+                        Text("Peso Objetivo")
+                        Spacer()
+                        TextField("Meta", value: $appState.userProfile.targetWeightKg, format: .number)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .onChange(of: appState.userProfile.targetWeightKg) { _ in appState.saveProfile() }
+                    }
+                    
+                    DatePicker("Fecha Objetivo", selection: $appState.userProfile.targetDate, in: Date()..., displayedComponents: .date)
+                        .onChange(of: appState.userProfile.targetDate) { _ in appState.saveProfile() }
+                    
+                    DatePicker("Cumpleaños", selection: $appState.userProfile.birthDate, displayedComponents: .date)
+                        .onChange(of: appState.userProfile.birthDate) { _ in appState.saveProfile() }
+                    
+                    HStack {
+                        Text("Edad")
+                        Spacer()
+                        Text("\(appState.userProfile.age) años")
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+                    
+                    HStack {
+                        Text("Altura")
+                        Spacer()
+                        Text(UnitFormatter.shared.formatHeight(appState.userProfile.heightCm, system: appState.userProfile.unitSystem))
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+                }
+                
+                // Sección 4: Notificaciones y Recordatorios
+                Section(header: Text("Notificaciones & Recordatorios")) {
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text("Recordatorios Activos")
+                            Text("Pesaje (7:30 AM), Comidas (13:30) y Entreno (18:00)")
+                                .font(.caption2)
+                                .foregroundColor(AppTheme.textSecondary)
+                        }
+                        Spacer()
+                        if notificationManager.isAuthorized {
+                            Text("Activo")
+                                .font(.caption.bold())
+                                .foregroundColor(AppTheme.exerciseGreen)
+                        } else {
+                            Button("Activar") {
+                                notificationManager.requestAuthorization()
+                            }
+                            .foregroundColor(AppTheme.exerciseGreen)
+                        }
+                    }
+                }
+                
+                // Sección 5: Cuenta Newton Labs (Autenticación Oficial)
+                Section(header: Text("Cuenta Newton Labs Gateway")) {
                     if let key = KeychainManager.shared.getApiKey(), !key.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
                                 Image(systemName: "checkmark.seal.fill")
-                                    .foregroundColor(AppTheme.success)
+                                    .foregroundColor(AppTheme.exerciseGreen)
                                 Text("Sesión Activa")
                                     .font(.headline)
-                                    .foregroundColor(AppTheme.textPrimary)
                             }
                             if let email = userEmail {
-                                Text(email)
-                                    .font(.subheadline)
-                                    .foregroundColor(AppTheme.textSecondary)
+                                Text(email).font(.subheadline).foregroundColor(AppTheme.textSecondary)
                             }
                             if let tier = userTierName {
-                                Text("Plan: \(tier)")
-                                    .font(.caption.bold())
-                                    .foregroundColor(AppTheme.primaryNeon)
+                                Text("Plan: \(tier)").font(.caption.bold()).foregroundColor(AppTheme.exerciseGreen)
                             }
                             if let credits = userCredits {
-                                Text("Créditos restantes: \(Int(credits)) tokens")
-                                    .font(.caption)
-                                    .foregroundColor(AppTheme.textSecondary)
+                                Text("Créditos restantes: \(Int(credits)) tokens").font(.caption).foregroundColor(AppTheme.textSecondary)
                             }
                             
                             Button(role: .destructive, action: logoutNewton) {
@@ -61,141 +164,54 @@ public struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 10) {
                             TextField("Usuario o Email", text: $usernameInput)
                                 .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                            
                             SecureField("Contraseña", text: $passwordInput)
                             
                             if isLoggingIn {
-                                ProgressView("Conectando con api.newton.daniellimon.uk...")
+                                ProgressView("Autenticando en Newton Labs...")
                             } else {
                                 Button(action: loginWithNewton) {
                                     Text("Iniciar Sesión (POST /auth/login)")
-                                        .font(.headline)
-                                        .foregroundColor(AppTheme.primaryNeon)
+                                        .font(.subheadline.weight(.bold))
+                                        .foregroundColor(AppTheme.exerciseGreen)
                                 }
                                 .disabled(usernameInput.isEmpty || passwordInput.isEmpty)
                             }
-                            
-                            if let error = loginError {
-                                Text(error)
-                                    .font(.caption)
-                                    .foregroundColor(AppTheme.danger)
+                            if let err = loginError {
+                                Text(err).font(.caption).foregroundColor(AppTheme.danger)
                             }
-                        }
-                    }
-                }
-                
-                // Fallback o Edición manual de API Key
-                Section(header: Text("API Key Manual"), footer: Text("Alternativamente puedes ingresar directamente un token ntwn-...")) {
-                    SecureField("ntwn-...", text: $manualApiKey)
-                    Button(action: {
-                        if KeychainManager.shared.saveApiKey(manualApiKey) {
-                            hasSavedKey = true
-                            refreshNewtonProfile()
-                        }
-                    }) {
-                        Text("Guardar Token Manual")
-                            .foregroundColor(AppTheme.primaryNeon)
-                    }
-                    if hasSavedKey {
-                        Text("Token guardado en Keychain.")
-                            .font(.caption)
-                            .foregroundColor(AppTheme.success)
-                    }
-                }
-                
-                // Sección de Datos Biométricos
-                Section("Datos Biométricos") {
-                    TextField("Nombre", text: $appState.userProfile.name)
-                        .onChange(of: appState.userProfile.name) { _ in appState.saveProfile() }
-                    
-                    DatePicker("Cumpleaños", selection: $appState.userProfile.birthDate, displayedComponents: .date)
-                        .onChange(of: appState.userProfile.birthDate) { _ in appState.saveProfile() }
-                    
-                    HStack {
-                        Text("Edad Calculada")
-                        Spacer()
-                        Text("\(appState.userProfile.age) años")
-                            .foregroundColor(AppTheme.textSecondary)
-                    }
-                    
-                    Picker("Género", selection: $appState.userProfile.gender) {
-                        ForEach(Gender.allCases) { g in
-                            Text(g.rawValue).tag(g)
-                        }
-                    }
-                    .onChange(of: appState.userProfile.gender) { _ in appState.saveProfile() }
-                    
-                    HStack {
-                        Text("Altura (cm)")
-                        Spacer()
-                        TextField("cm", value: $appState.userProfile.heightCm, format: .number)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .onChange(of: appState.userProfile.heightCm) { _ in appState.saveProfile() }
-                    }
-                    
-                    Picker("Nivel de Actividad", selection: $appState.userProfile.activityLevel) {
-                        ForEach(ActivityLevel.allCases) { a in
-                            Text(a.rawValue).tag(a)
-                        }
-                    }
-                    .onChange(of: appState.userProfile.activityLevel) { _ in appState.saveProfile() }
-                }
-                
-                // Sección de Meta Temporal
-                Section("Meta de Peso & Plazo") {
-                    HStack {
-                        Text("Peso Objetivo (kg)")
-                        Spacer()
-                        TextField("kg", value: $appState.userProfile.targetWeightKg, format: .number)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .onChange(of: appState.userProfile.targetWeightKg) { _ in appState.saveProfile() }
-                    }
-                    
-                    DatePicker("Fecha Objetivo", selection: $appState.userProfile.targetDate, in: Date()..., displayedComponents: .date)
-                        .onChange(of: appState.userProfile.targetDate) { _ in appState.saveProfile() }
-                    
-                    HStack {
-                        Text("Días Restantes")
-                        Spacer()
-                        Text("\(appState.userProfile.daysRemaining) días")
-                            .foregroundColor(AppTheme.primaryNeon)
-                    }
-                }
-                
-                // Sección de Notificaciones y Recordatorios
-                Section("Notificaciones & Recordatorios") {
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text("Recordatorios Diarios")
-                            Text("Pesaje (7:30 AM), Comidas (13:30) y Entreno (18:00)")
-                                .font(.caption)
-                                .foregroundColor(AppTheme.textSecondary)
-                        }
-                        Spacer()
-                        if notificationManager.isAuthorized {
-                            Text("Activo")
-                                .font(.caption.bold())
-                                .foregroundColor(AppTheme.success)
-                        } else {
-                            Button("Activar") {
-                                notificationManager.requestAuthorization()
-                            }
-                            .foregroundColor(AppTheme.primaryNeon)
                         }
                     }
                 }
             }
             .navigationTitle("Ajustes")
+            .sheet(isPresented: $showingWeightModal) {
+                WeightDialModal()
+            }
             .onAppear {
-                if let key = KeychainManager.shared.getApiKey() {
-                    self.manualApiKey = key
-                    refreshNewtonProfile()
-                }
+                refreshNewtonProfile()
             }
         }
+    }
+    
+    private func importHealthData() {
+        HealthKitManager.shared.fetchLatestWeight { w in
+            if let w = w {
+                appState.updateWeight(newWeight: w)
+            }
+        }
+        HealthKitManager.shared.fetchLatestHeight { h in
+            if let h = h {
+                appState.userProfile.heightCm = h
+                appState.saveProfile()
+            }
+        }
+        HealthKitManager.shared.fetchBirthDate()
+        if let b = HealthKitManager.shared.birthDateFromHealth {
+            appState.userProfile.birthDate = b
+            appState.saveProfile()
+        }
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
     }
     
     private func loginWithNewton() {
@@ -204,12 +220,9 @@ public struct SettingsView: View {
         Task { @MainActor in
             do {
                 let res = try await NewtonAPIClient.shared.login(username: usernameInput, password: passwordInput)
-                if let key = res.api_key {
-                    self.manualApiKey = key
-                    self.userEmail = res.email
-                    self.userTierName = res.tier?.name
-                    self.userCredits = res.credits_left
-                }
+                self.userEmail = res.email
+                self.userTierName = res.tier?.name
+                self.userCredits = res.credits_left
                 self.isLoggingIn = false
                 refreshNewtonProfile()
             } catch {
@@ -231,7 +244,6 @@ public struct SettingsView: View {
     
     private func logoutNewton() {
         KeychainManager.shared.deleteApiKey()
-        manualApiKey = ""
         userEmail = nil
         userTierName = nil
         userCredits = nil

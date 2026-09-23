@@ -1,16 +1,29 @@
 import SwiftUI
 
 public enum AppTheme {
-    public static let background = Color(hex: "0D0F12")
-    public static let surface = Color(hex: "171A21")
-    public static let surfaceElevated = Color(hex: "212631")
-    public static let primaryNeon = Color(hex: "00F0FF") // Cyan futurista
-    public static let secondaryAccent = Color(hex: "7000FF") // Violeta Newton
-    public static let textPrimary = Color(hex: "FFFFFF")
-    public static let textSecondary = Color(hex: "8E9AA8")
-    public static let success = Color(hex: "00E676")
-    public static let warning = Color(hex: "FFB300")
-    public static let danger = Color(hex: "FF5252")
+    // Fondos Apple Fitness (True Black & Dark Zinc)
+    public static let background = Color.black
+    public static let surface = Color(hex: "121214")
+    public static let surfaceElevated = Color(hex: "1C1C1E")
+    public static let surfaceBorder = Color(hex: "2C2C2E")
+    
+    // Acentos Oficiales Apple Activity & Fitness
+    public static let moveRed = Color(hex: "FA114F")        // Anillo de movimiento / Calorías / Proteína
+    public static let exerciseGreen = Color(hex: "A1FF00")  // Anillo de ejercicio / Lima deportivo
+    public static let standCyan = Color(hex: "00F0FF")      // Anillo de pie / Hidratación / Carbos
+    public static let awardGold = Color(hex: "FFD60A")      // Trofeos / Cumpleaños / Grasas
+    
+    // Tipografía
+    public static let textPrimary = Color.white
+    public static let textSecondary = Color(hex: "8E8E93")
+    public static let textTertiary = Color(hex: "48484A")
+    
+    // Tarjetas de Workout (Verde Oliva Oscuro Apple)
+    public static let workoutCardBg = Color(hex: "151C0A")
+    public static let workoutButtonBg = Color(hex: "222C10")
+    
+    public static let success = Color(hex: "30D158")
+    public static let danger = Color(hex: "FF453A")
 }
 
 extension Color {

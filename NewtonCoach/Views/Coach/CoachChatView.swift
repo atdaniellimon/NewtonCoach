@@ -17,7 +17,7 @@ public struct CoachChatMessage: Identifiable, Codable {
 public struct CoachChatView: View {
     @EnvironmentObject var appState: AppState
     @State private var messages: [CoachChatMessage] = [
-        CoachChatMessage(role: "assistant", content: "¡Hola! Soy tu Newton Coach deportivo. Tengo presentes tus datos, tu meta de peso y tus calorías calculadas. ¿Qué entrenamos hoy o qué duda tienes con tu nutrición?")
+        CoachChatMessage(role: "assistant", content: "¡Hola! Soy tu Newton Coach deportivo. He sincronizado tus métricas actuales, tus metas de peso y tus requerimientos nutricionales. ¿Qué entrenamos hoy o qué duda tienes con tu plan?")
     ]
     @State private var inputPrompt: String = ""
     @State private var isStreaming: Bool = false
@@ -25,31 +25,49 @@ public struct CoachChatView: View {
     public init() {}
     
     public var body: some View {
-        VStack(spacing: 0) {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(spacing: 12) {
-                        ForEach(messages) { msg in
-                            chatBubble(msg: msg)
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Header Coach Estilo Apple Fitness
+                HStack {
+                    Text("Newton Coach")
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundColor(AppTheme.textPrimary)
+                    Spacer()
+                    Image(systemName: "sparkles")
+                        .font(.title2)
+                        .foregroundColor(AppTheme.exerciseGreen)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                .padding(.bottom, 6)
+                
+                // Mensajes de Chat
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(messages) { msg in
+                                chatBubble(msg: msg)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                    }
+                    .onChange(of: messages.count) { _ in
+                        if let last = messages.last {
+                            withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
                         }
                     }
-                    .padding()
                 }
-                .onChange(of: messages.count) { _ in
-                    if let last = messages.last {
-                        withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
-                    }
-                }
+                
+                // Sugerencias Rápidas
+                quickChips
+                
+                // Barra de Entrada
+                inputBar
             }
-            
-            // Sugerencias Rápidas
-            quickChips
-            
-            // Barra de Entrada
-            inputBar
+            .background(AppTheme.background.ignoresSafeArea())
+            .navigationBarHidden(true)
         }
-        .background(AppTheme.background.ignoresSafeArea())
-        .navigationTitle("Newton Coach")
     }
     
     private func chatBubble(msg: CoachChatMessage) -> some View {
@@ -59,10 +77,14 @@ public struct CoachChatView: View {
             Text(msg.content)
                 .font(.subheadline)
                 .foregroundColor(AppTheme.textPrimary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(msg.role == "user" ? AppTheme.secondaryAccent : AppTheme.surfaceElevated)
-                .cornerRadius(16)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(msg.role == "user" ? AppTheme.exerciseGreen.opacity(0.2) : AppTheme.surface)
+                .cornerRadius(18)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(msg.role == "user" ? AppTheme.exerciseGreen.opacity(0.4) : AppTheme.surfaceBorder, lineWidth: 0.5)
+                )
             
             if msg.role == "assistant" { Spacer() }
         }
@@ -71,11 +93,11 @@ public struct CoachChatView: View {
     private var quickChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                chipButton("¿Cuánto descansar hoy?")
-                chipButton("Sustituir ejercicio")
-                chipButton("¿Cómo llegar a mis proteínas?")
+                chipButton("¿Cuánto subir en mi press hoy?")
+                chipButton("Sustituir polea ocupada")
+                chipButton("¿Qué cenar con 35g de proteína?")
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 16)
             .padding(.vertical, 6)
         }
     }
@@ -86,12 +108,12 @@ public struct CoachChatView: View {
             sendMessage()
         }) {
             Text(text)
-                .font(.caption.bold())
-                .foregroundColor(AppTheme.primaryNeon)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(AppTheme.surface)
-                .cornerRadius(12)
+                .font(.caption.weight(.semibold))
+                .foregroundColor(AppTheme.exerciseGreen)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(AppTheme.surfaceElevated)
+                .cornerRadius(16)
         }
     }
     
@@ -100,19 +122,21 @@ public struct CoachChatView: View {
             TextField("Pregúntale a Newton Coach...", text: $inputPrompt)
                 .padding(12)
                 .background(AppTheme.surfaceElevated)
-                .cornerRadius(12)
+                .cornerRadius(16)
                 .foregroundColor(AppTheme.textPrimary)
             
             Button(action: sendMessage) {
-                Image(systemName: isStreaming ? "stop.fill" : "paperplane.fill")
+                Image(systemName: isStreaming ? "stop.fill" : "arrow.up")
+                    .font(.body.weight(.bold))
                     .foregroundColor(.black)
-                    .padding(12)
-                    .background(AppTheme.primaryNeon)
+                    .padding(10)
+                    .background(AppTheme.exerciseGreen)
                     .clipShape(Circle())
             }
             .disabled(inputPrompt.trimmingCharacters(in: .whitespaces).isEmpty && !isStreaming)
         }
-        .padding()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
         .background(AppTheme.surface)
     }
     
@@ -130,10 +154,19 @@ public struct CoachChatView: View {
         
         isStreaming = true
         
+        let weightUnitStr = UnitFormatter.shared.formatWeight(appState.userProfile.currentWeightKg, system: appState.userProfile.unitSystem)
+        let targetUnitStr = UnitFormatter.shared.formatWeight(appState.userProfile.targetWeightKg, system: appState.userProfile.unitSystem)
+        
         let systemPrompt = """
-        Eres Newton Coach, preparador físico y biomecánico de élite.
-        El usuario es \(appState.userProfile.name), tiene \(appState.userProfile.age) años, peso actual \(String(format: "%.1f", appState.userProfile.currentWeightKg)) kg, meta \(String(format: "%.1f", appState.userProfile.targetWeightKg)) kg, con un objetivo de \(Int(appState.currentTargets.targetCalories)) kcal diarias.
-        Responde con rigor científico, directo al punto, claro y sin introducciones innecesarias.
+        Eres Newton Coach, científico deportivo, biomecánico y preparador físico de alto rendimiento.
+        Datos del usuario:
+        - Nombre: \(appState.userProfile.name)
+        - Edad: \(appState.userProfile.age) años
+        - Peso actual: \(weightUnitStr) -> Meta: \(targetUnitStr)
+        - Días restantes: \(appState.userProfile.daysRemaining) días
+        - Meta Calórica Diaria: \(Int(appState.currentTargets.targetCalories)) kcal
+        - Proteína diaria objetivo: \(Int(appState.currentTargets.proteinGrams))g
+        Responde con rigor biomecánico y científico, directo al grano, claro y accionable sin introducciones de relleno.
         """
         
         let history = messages.dropLast().map {

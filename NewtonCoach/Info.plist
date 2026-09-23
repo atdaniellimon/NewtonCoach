@@ -24,6 +24,10 @@
 	<string>NewtonCoach necesita acceso a la cámara para que MacroLens pueda analizar los macronutrientes y calorías de tus comidas con IA.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>NewtonCoach necesita acceso a tu galería para analizar fotos de tus platos y entrenamientos.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>NewtonCoach necesita leer tu peso, altura y cumpleaños de Apple Health para calcular tus metas nutricionales y sincronizar tu progreso automáticamente.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>NewtonCoach sincroniza tus nuevos pesajes registrados en la app directamente en Apple Health.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

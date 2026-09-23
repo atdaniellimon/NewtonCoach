@@ -9,12 +9,17 @@ public struct MainTabView: View {
         TabView {
             DashboardView()
                 .tabItem {
-                    Label("Inicio", systemImage: "bolt.fill")
+                    Label("Summary", systemImage: "circle.grid.cross.fill")
+                }
+            
+            WorkoutListView()
+                .tabItem {
+                    Label("Workout", systemImage: "figure.run.circle.fill")
                 }
             
             MealPlanView()
                 .tabItem {
-                    Label("Menú", systemImage: "fork.knife")
+                    Label("Nutrition", systemImage: "fork.knife.circle.fill")
                 }
             
             CoachChatView()
@@ -22,20 +27,18 @@ public struct MainTabView: View {
                     Label("Coach", systemImage: "bubble.left.and.bubble.right.fill")
                 }
             
-            AchievementsView()
-                .tabItem {
-                    Label("Logros", systemImage: "trophy.fill")
-                }
-            
             SettingsView()
                 .tabItem {
-                    Label("Ajustes", systemImage: "gearshape.fill")
+                    Label("Settings", systemImage: "gearshape.circle.fill")
                 }
         }
         .environmentObject(appState)
-        .accentColor(AppTheme.primaryNeon)
+        .accentColor(AppTheme.exerciseGreen)
         .onAppear {
             NotificationManager.shared.checkAuthorization()
+            if appState.userProfile.syncWithHealthKit {
+                HealthKitManager.shared.requestAuthorization { _, _ in }
+            }
         }
     }
 }

@@ -1,33 +1,5 @@
 import Foundation
 
-public enum Gender: String, Codable, CaseIterable, Identifiable {
-    case male = "Masculino"
-    case female = "Femenino"
-    case other = "Otro"
-    
-    public var id: String { rawValue }
-}
-
-public enum ActivityLevel: String, Codable, CaseIterable, Identifiable {
-    case sedentary = "Sedentario (Poco o nada de ejercicio)"
-    case light = "Ligero (1-3 días por semana)"
-    case moderate = "Moderado (3-5 días por semana)"
-    case active = "Activo (6-7 días por semana)"
-    case veryActive = "Muy Activo (Doble sesión / Trabajo físico pesado)"
-    
-    public var id: String { rawValue }
-    
-    public var multiplier: Double {
-        switch self {
-        case .sedentary: return 1.2
-        case .light: return 1.375
-        case .moderate: return 1.55
-        case .active: return 1.725
-        case .veryActive: return 1.9
-        }
-    }
-}
-
 public struct UserProfile: Codable {
     public var name: String
     public var birthDate: Date
@@ -37,6 +9,8 @@ public struct UserProfile: Codable {
     public var targetWeightKg: Double
     public var targetDate: Date
     public var activityLevel: ActivityLevel
+    public var unitSystem: UnitSystem
+    public var syncWithHealthKit: Bool
     public var weightHistory: [WeightEntry]
     
     public init(
@@ -48,6 +22,8 @@ public struct UserProfile: Codable {
         targetWeightKg: Double = 72.0,
         targetDate: Date = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date(),
         activityLevel: ActivityLevel = .moderate,
+        unitSystem: UnitSystem = .metric,
+        syncWithHealthKit: Bool = true,
         weightHistory: [WeightEntry] = []
     ) {
         self.name = name
@@ -58,6 +34,8 @@ public struct UserProfile: Codable {
         self.targetWeightKg = targetWeightKg
         self.targetDate = targetDate
         self.activityLevel = activityLevel
+        self.unitSystem = unitSystem
+        self.syncWithHealthKit = syncWithHealthKit
         self.weightHistory = weightHistory.isEmpty ? [WeightEntry(date: Date(), weightKg: currentWeightKg)] : weightHistory
     }
     
@@ -82,17 +60,5 @@ public struct UserProfile: Codable {
         let todayComponents = calendar.dateComponents([.month, .day], from: Date())
         let birthComponents = calendar.dateComponents([.month, .day], from: birthDate)
         return todayComponents.month == birthComponents.month && todayComponents.day == birthComponents.day
-    }
-}
-
-public struct WeightEntry: Codable, Identifiable {
-    public var id: UUID
-    public var date: Date
-    public var weightKg: Double
-    
-    public init(id: UUID = UUID(), date: Date = Date(), weightKg: Double) {
-        self.id = id
-        self.date = date
-        self.weightKg = weightKg
     }
 }
