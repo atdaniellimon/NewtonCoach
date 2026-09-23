@@ -26,3 +26,4 @@ build_output/
 # Swift Package Manager
 .build/
 .swiftpm/
+push.sh
