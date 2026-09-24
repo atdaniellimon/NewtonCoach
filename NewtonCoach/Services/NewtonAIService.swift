@@ -91,43 +91,41 @@ public final class NewtonAIService {
             let fat: Double
         }
         
-        let decoded: JsonMenu
         do {
-            decoded = try RobustJSONParser.shared.decode(JsonMenu.self, from: response.reply)
+            let decoded = try RobustJSONParser.shared.decode(JsonMenu.self, from: response.reply)
+            let mealItems = decoded.meals.map { m in
+                MealItem(
+                    category: m.category,
+                    name: m.name,
+                    description: m.description,
+                    calories: m.calories,
+                    protein: m.protein,
+                    carbs: m.carbs,
+                    fat: m.fat
+                )
+            }
+            
+            let totalCals = mealItems.reduce(0) { $0 + $1.calories }
+            let totalProt = mealItems.reduce(0) { $0 + $1.protein }
+            let totalCarbs = mealItems.reduce(0) { $0 + $1.carbs }
+            let totalFat = mealItems.reduce(0) { $0 + $1.fat }
+            
+            return MealPlan(
+                title: decoded.title ?? "Menú Recomendado por Newton AI",
+                totalCalories: totalCals,
+                totalProtein: totalProt,
+                totalCarbs: totalCarbs,
+                totalFat: totalFat,
+                meals: mealItems
+            )
         } catch {
             // Reintento de emergencia: generar estructura limpia determinista basada en metas calculadas
-            decoded = generateDeterministicMenuFallback(for: profile, targets: targets)
+            return generateDeterministicMenuFallback(for: profile, targets: targets)
         }
-        
-        let mealItems = decoded.meals.map { m in
-            MealItem(
-                category: m.category,
-                name: m.name,
-                description: m.description,
-                calories: m.calories,
-                protein: m.protein,
-                carbs: m.carbs,
-                fat: m.fat
-            )
-        }
-        
-        let totalCals = mealItems.reduce(0) { $0 + $1.calories }
-        let totalProt = mealItems.reduce(0) { $0 + $1.protein }
-        let totalCarbs = mealItems.reduce(0) { $0 + $1.carbs }
-        let totalFat = mealItems.reduce(0) { $0 + $1.fat }
-        
-        return MealPlan(
-            title: decoded.title ?? "Menú Recomendado por Newton AI",
-            totalCalories: totalCals,
-            totalProtein: totalProt,
-            totalCarbs: totalCarbs,
-            totalFat: totalFat,
-            meals: mealItems
-        )
     }
     
     /// Fallback determinista de alto rigor en caso de corte de red o respuesta LLM severamente corrupta
-    private func generateDeterministicMenuFallback(for profile: UserProfile, targets: NutritionTargets) -> (title: String, meals: [MealItem]) {
+    private func generateDeterministicMenuFallback(for profile: UserProfile, targets: NutritionTargets) -> MealPlan {
         let cal = targets.targetCalories
         let prot = targets.proteinGrams
         let carbs = targets.carbGrams
@@ -138,7 +136,15 @@ public final class NewtonAIService {
         let m3 = MealItem(category: "Merienda", name: "Yogur Griego con Almendras y Manzana", description: "200g yogur griego 0%, 25g almendras y 1 manzana en rodajas", calories: cal * 0.15, protein: prot * 0.16, carbs: carbs * 0.15, fat: fat * 0.22)
         let m4 = MealItem(category: "Cena", name: "Salmón o Ternera Magra con Batata Asada", description: "160g salmón al horno con 150g batata/camote y espárragos", calories: cal * 0.25, protein: prot * 0.20, carbs: carbs * 0.20, fat: fat * 0.28)
         
-        return (title: "Menú Balanceado de Alta Precisión", meals: [m1, m2, m3, m4])
+        let meals = [m1, m2, m3, m4]
+        return MealPlan(
+            title: "Menú Balanceado de Alta Precisión",
+            totalCalories: meals.reduce(0) { $0 + $1.calories },
+            totalProtein: meals.reduce(0) { $0 + $1.protein },
+            totalCarbs: meals.reduce(0) { $0 + $1.carbs },
+            totalFat: meals.reduce(0) { $0 + $1.fat },
+            meals: meals
+        )
     }
 
     

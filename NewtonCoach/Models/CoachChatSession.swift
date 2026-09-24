@@ -1,5 +1,20 @@
 import Foundation
 
+/// Mensaje individual dentro de una sesión de chat con el coach
+public struct CoachChatMessage: Codable, Identifiable {
+    public var id: UUID
+    public var role: String
+    public var content: String
+    public var timestamp: Date
+    
+    public init(id: UUID = UUID(), role: String, content: String, timestamp: Date = Date()) {
+        self.id = id
+        self.role = role
+        self.content = content
+        self.timestamp = timestamp
+    }
+}
+
 /// Modelo para una conversación completa guardada con el Newton Coach
 public struct CoachChatSession: Codable, Identifiable {
     public var id: UUID

@@ -536,7 +536,7 @@ public struct OneRMCalculatorModal: View {
     private func percentagePill(pct: String, reps: String, val: Double) -> some View {
         VStack(spacing: 2) {
             Text(pct).font(.caption.bold()).foregroundColor(AppTheme.exerciseGreen)
-            Text(String(format: "%.1f kg", val)).font(.footnote.heavy())
+            Text(String(format: "%.1f kg", val)).font(.system(.footnote, weight: .heavy))
             Text(reps).font(.system(size: 9)).foregroundColor(AppTheme.textSecondary)
         }
         .frame(maxWidth: .infinity)
