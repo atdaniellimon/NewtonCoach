@@ -49,6 +49,9 @@ public struct ActiveWorkoutView: View {
                 ForEach(0..<routine.exercises.count, id: \.self) { exerciseIndex in
                     exerciseBlock(exerciseIndex: exerciseIndex)
                 }
+                
+                // Botón Finalizar Sesión con Guardado Permanente
+                finishWorkoutButton
             }
             .padding()
         }
@@ -58,6 +61,7 @@ public struct ActiveWorkoutView: View {
         .onReceive(timer) { _ in
             if timerActive && restSecondsRemaining > 0 {
                 restSecondsRemaining -= 1
+
             } else if restSecondsRemaining == 0 && timerActive {
                 timerActive = false
                 let generator = UINotificationFeedbackGenerator()
@@ -155,4 +159,61 @@ public struct ActiveWorkoutView: View {
         .cornerRadius(20)
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(AppTheme.surfaceBorder, lineWidth: 0.5))
     }
+    
+    private var finishWorkoutButton: some View {
+        Button(action: finishWorkout) {
+            HStack(spacing: 8) {
+                Image(systemName: "flag.checkered")
+                    .font(.headline)
+                Text("Finalizar y Guardar Sesión")
+                    .font(.headline.weight(.bold))
+            }
+            .foregroundColor(.black)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(AppTheme.exerciseGreen)
+            .cornerRadius(18)
+        }
+        .padding(.top, 10)
+    }
+    
+    private func finishWorkout() {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+        
+        var totalSets = 0
+        var totalTonnage = 0.0
+        var snapshots: [CompletedExerciseSnapshot] = []
+        
+        for ex in routine.exercises {
+            let completed = ex.sets.filter { $0.isCompleted }
+            totalSets += completed.count
+            let exerciseTonnage = completed.reduce(0.0) { $0 + ($1.weightKg * Double($1.reps)) }
+            totalTonnage += exerciseTonnage
+            
+            let bestSet = completed.max(by: { $0.weightKg < $1.weightKg })
+            let snapshot = CompletedExerciseSnapshot(
+                name: ex.name,
+                category: ex.category,
+                setsCompleted: completed.count,
+                bestWeightKg: bestSet?.weightKg ?? 0.0,
+                bestReps: bestSet?.reps ?? 0
+            )
+            snapshots.append(snapshot)
+        }
+        
+        let session = CompletedWorkoutSession(
+            routineTitle: routine.title,
+            durationMinutes: 55,
+            totalTonnageKg: totalTonnage,
+            totalSetsCompleted: totalSets,
+            notes: "Sesión completada con éxito.",
+            completedExercises: snapshots
+        )
+        
+        var history = LocalDataManager.shared.loadWorkoutHistory()
+        history.insert(session, at: 0)
+        LocalDataManager.shared.saveWorkoutHistory(history)
+    }
 }
+

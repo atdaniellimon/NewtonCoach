@@ -53,6 +53,19 @@ public struct MealPlanView: View {
             
             Spacer()
             
+            NavigationLink(destination: NutritionDiaryView()) {
+                HStack(spacing: 4) {
+                    Image(systemName: "list.clipboard.fill")
+                    Text("Diario")
+                }
+                .font(.caption2.weight(.bold))
+                .foregroundColor(AppTheme.exerciseGreen)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(AppTheme.surfaceElevated)
+                .cornerRadius(14)
+            }
+            
             Button(action: {
                 appState.fetchOrRegenerateMenu()
             }) {
@@ -66,6 +79,7 @@ public struct MealPlanView: View {
         }
         .padding(.top, 10)
     }
+
     
     private var filterPills: some View {
         ScrollView(.horizontal, showsIndicators: false) {

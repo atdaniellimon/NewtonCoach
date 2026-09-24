@@ -113,6 +113,26 @@ public struct UserProfile: Codable {
         self.loggedFoods = loggedFoods
     }
     
+    // MARK: - Decodificador Defensivo con Tolerancia a Versiones Previas
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        self.name = try container.decodeIfPresent(String.self, forKey: .name) ?? "Daniel"
+        self.birthDate = try container.decodeIfPresent(Date.self, forKey: .birthDate) ?? (Calendar.current.date(byAdding: .year, value: -25, to: Date()) ?? Date())
+        self.gender = try container.decodeIfPresent(Gender.self, forKey: .gender) ?? .male
+        self.heightCm = try container.decodeIfPresent(Double.self, forKey: .heightCm) ?? 175.0
+        self.currentWeightKg = try container.decodeIfPresent(Double.self, forKey: .currentWeightKg) ?? 78.0
+        self.targetWeightKg = try container.decodeIfPresent(Double.self, forKey: .targetWeightKg) ?? 72.0
+        self.targetDate = try container.decodeIfPresent(Date.self, forKey: .targetDate) ?? (Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date())
+        self.activityLevel = try container.decodeIfPresent(ActivityLevel.self, forKey: .activityLevel) ?? .moderate
+        self.unitSystem = try container.decodeIfPresent(UnitSystem.self, forKey: .unitSystem) ?? .metric
+        self.syncWithHealthKit = try container.decodeIfPresent(Bool.self, forKey: .syncWithHealthKit) ?? false
+        
+        let loadedWeights = try container.decodeIfPresent([WeightEntry].self, forKey: .weightHistory) ?? []
+        self.weightHistory = loadedWeights.isEmpty ? [WeightEntry(date: Date(), weightKg: self.currentWeightKg)] : loadedWeights
+        self.loggedFoods = try container.decodeIfPresent([LoggedFoodEntry].self, forKey: .loggedFoods) ?? []
+    }
+    
     public var age: Int {
         let calendar = Calendar.current
         let ageComponents = calendar.dateComponents([.year], from: birthDate, to: Date())
@@ -158,4 +178,5 @@ public struct UserProfile: Codable {
         return todayLoggedFoods.reduce(0) { $0 + $1.fat }
     }
 }
+
 

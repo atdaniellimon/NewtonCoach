@@ -12,8 +12,10 @@ public final class AppState: ObservableObject {
     
     public init() {
         let loadedProfile: UserProfile
-        if let data = UserDefaults.standard.data(forKey: profileKey),
-           let profile = try? JSONDecoder().decode(UserProfile.self, from: data) {
+        if let diskProfile = LocalDataManager.shared.loadUserProfile() {
+            loadedProfile = diskProfile
+        } else if let data = UserDefaults.standard.data(forKey: profileKey),
+                  let profile = try? JSONDecoder().decode(UserProfile.self, from: data) {
             loadedProfile = profile
         } else {
             loadedProfile = UserProfile()
@@ -31,6 +33,10 @@ public final class AppState: ObservableObject {
     }
     
     public func saveProfile() {
+        // 1. Guardar atómicamente en archivo físico del sandbox
+        LocalDataManager.shared.saveUserProfile(userProfile)
+        
+        // 2. Caché rápida en UserDefaults
         if let data = try? JSONEncoder().encode(userProfile) {
             UserDefaults.standard.set(data, forKey: profileKey)
         }
@@ -38,6 +44,7 @@ public final class AppState: ObservableObject {
         AchievementManager.shared.evaluateAchievements(profile: userProfile)
         NotificationManager.shared.scheduleDefaultReminders()
     }
+
     
     public func updateWeight(newWeight: Double) {
         userProfile.currentWeightKg = newWeight

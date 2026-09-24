@@ -82,27 +82,25 @@ public struct WorkoutListView: View {
             
             Spacer()
             
-            HStack(spacing: 12) {
-                Button(action: {}) {
-                    Image(systemName: "square.and.pencil")
-                        .font(.title3)
-                        .foregroundColor(AppTheme.textPrimary)
-                        .padding(8)
-                        .background(AppTheme.surfaceElevated)
-                        .clipShape(Circle())
-                }
-                Button(action: {}) {
-                    Image(systemName: "heart.slash.fill")
-                        .font(.title3)
-                        .foregroundColor(AppTheme.textSecondary)
-                        .padding(8)
-                        .background(AppTheme.surfaceElevated)
-                        .clipShape(Circle())
+            HStack(spacing: 10) {
+                NavigationLink(destination: HypertrophyAnalyticsView()) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "flame.fill")
+                            .foregroundColor(AppTheme.exerciseGreen)
+                        Text("Volumen RP")
+                            .font(.caption2.weight(.bold))
+                            .foregroundColor(AppTheme.exerciseGreen)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(AppTheme.surfaceElevated)
+                    .cornerRadius(14)
                 }
             }
         }
         .padding(.top, 10)
     }
+
     
     private var watchSensorNotice: some View {
         HStack(spacing: 12) {

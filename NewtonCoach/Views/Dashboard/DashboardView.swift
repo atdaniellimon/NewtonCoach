@@ -156,12 +156,8 @@ public struct DashboardView: View {
     
     private var fitnessGrid2x2: some View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)], spacing: 14) {
-            // Tarjeta 1: Peso Actual
-            Button(action: {
-                let impact = UIImpactFeedbackGenerator(style: .medium)
-                impact.impactOccurred()
-                showingWeightModal = true
-            }) {
+            // Tarjeta 1: Peso Actual y Evolución de Peso (MacroFactor Style)
+            NavigationLink(destination: WeightHistoryView()) {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
                         Text("Weight")
@@ -173,7 +169,7 @@ public struct DashboardView: View {
                             .foregroundColor(AppTheme.textSecondary)
                     }
                     
-                    Text("Today")
+                    Text("Trend & History")
                         .font(.caption2)
                         .foregroundColor(AppTheme.textSecondary)
                     
@@ -184,7 +180,7 @@ public struct DashboardView: View {
                     
                     Spacer()
                     
-                    // Micro-gráfica de barras horarias simuladas
+                    // Micro-gráfica de barras horarias
                     HStack(alignment: .bottom, spacing: 3) {
                         bar(height: 12)
                         bar(height: 18)
@@ -235,8 +231,8 @@ public struct DashboardView: View {
             .cornerRadius(20)
             .overlay(RoundedRectangle(cornerRadius: 20).stroke(AppTheme.surfaceBorder, lineWidth: 0.5))
             
-            // Tarjeta 3: Nutrición y Calorías de Hoy
-            NavigationLink(destination: MealPlanView()) {
+            // Tarjeta 3: Nutrición y Diario Nutricional
+            NavigationLink(destination: NutritionDiaryView()) {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
                         Text("Nutrition")
@@ -251,7 +247,7 @@ public struct DashboardView: View {
                     let consumed = appState.userProfile.todayConsumedCalories
                     let target = appState.currentTargets.targetCalories
                     
-                    Text("Today's Diet")
+                    Text("Today's Diary")
                         .font(.caption2)
                         .foregroundColor(AppTheme.textSecondary)
                     
@@ -277,6 +273,7 @@ public struct DashboardView: View {
                 .overlay(RoundedRectangle(cornerRadius: 20).stroke(AppTheme.surfaceBorder, lineWidth: 0.5))
             }
             .buttonStyle(.plain)
+
 
             
             // Tarjeta 4: Awards / Premios con Medalla 3D
